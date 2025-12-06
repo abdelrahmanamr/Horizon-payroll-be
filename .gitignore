@@ -1,0 +1,41 @@
+# Node modules
+/node_modules/
+
+# Build output
+/dist/
+
+# Environment variables
+.env
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Optional npm cache directory
+.npm/
+
+# Optional eslint cache
+.eslintcache
+
+# Mac system files
+.DS_Store
+
+# IDE/editor files
+.vscode/
+.idea/
+
+# Test coverage reports
+/coverage/
+
+# Misc
+*.tgz
+
+# Optional: Ignore local MongoDB data if you run locally
+/data/
+
+# Optional: Ignore debug files, e.g., from debugging tools
+*.local
+
