@@ -7,6 +7,7 @@ import {
 } from "../lib/crypto";
 import { UserKey } from "../models/UserKey";
 import crypto from "crypto";
+import { connectToDatabase } from "../server";
 
 // Helper: get or create per-user seed
 
@@ -22,6 +23,8 @@ export class CryptoController {
           .status(400)
           .json({ error: "users must be a non-empty array" });
       }
+
+      await connectToDatabase();
 
       const preparedUsers = [];
 
@@ -75,6 +78,7 @@ export class CryptoController {
           .json({ error: "plaintext must be a non-empty string" });
       }
 
+      await connectToDatabase();
       // Fetch seed
       const uk = await UserKey.findOne({ username: username }).exec();
       if (!uk)
@@ -114,6 +118,7 @@ export class CryptoController {
           .status(400)
           .json({ error: "invalid encrypted messages array" });
       }
+      await connectToDatabase();
 
       const uk = await UserKey.findOne({ username: username }).exec();
       if (!uk) return res.status(404).json({ error: "user key not found" });
