@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import app from "./app";
-import https from "https";
 
 dotenv.config();
 
@@ -13,19 +12,44 @@ if (!MONGO_URI) {
   process.exit(1);
 }
 
-// Fetch and print your public IP address
-https.get("https://api.ipify.org", (res) => {
-  let ip = "";
-  res.on("data", (chunk) => (ip += chunk));
-  res.on("end", () => {
-    console.log("Your public IP address is:", ip);
-    console.log("➡️  Add this IP to MongoDB Atlas Network Access whitelist.");
-  });
-});
+// MongoDB Connection with optimized settings for serverless/Vercel
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+async function connectToDatabase() {
+  if (cached.conn) {
+    return cached.conn;
+  }
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    };
+
+    cached.promise = mongoose.connect(MONGO_URI, opts).then((mongoose) => {
+      return mongoose;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
+  return cached.conn;
+}
 
 const startServer = async (port: number) => {
   try {
-    await mongoose.connect(MONGO_URI);
+    await connectToDatabase();
     console.log("Connected to the database");
 
     const server = app.listen(port, () => {
@@ -48,3 +72,14 @@ const startServer = async (port: number) => {
 };
 
 startServer(DEFAULT_PORT);
+
+// Handle graceful shutdown
+process.on("SIGINT", async () => {
+  await mongoose.connection.close();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  await mongoose.connection.close();
+  process.exit(0);
+});
