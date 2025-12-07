@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import app from "./app";
+import https from "https";
 
 dotenv.config();
 
@@ -11,6 +12,16 @@ if (!MONGO_URI) {
   console.error("MONGO_URI is not defined in environment variables.");
   process.exit(1);
 }
+
+// Fetch and print your public IP address
+https.get("https://api.ipify.org", (res) => {
+  let ip = "";
+  res.on("data", (chunk) => (ip += chunk));
+  res.on("end", () => {
+    console.log("Your public IP address is:", ip);
+    console.log("➡️  Add this IP to MongoDB Atlas Network Access whitelist.");
+  });
+});
 
 const startServer = async (port: number) => {
   try {
