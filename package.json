@@ -26,6 +26,7 @@
     "express": "^4.17.1",
     "mangodb": "^1.0.0",
     "mongoose": "^8.16.0",
+    "pdf-lib": "^1.17.1",
     "supertest": "^7.1.1"
   }
 }
