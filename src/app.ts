@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import cryptoRouter from "./routes/crypto.route";
+import payrollRouter from "./routes/payroll.route";
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/crypto", cryptoRouter);
+app.use("/api/payroll", payrollRouter);
 
 app.get("/", (req, res) => {
   res.status(200).send("App connected successfully");
