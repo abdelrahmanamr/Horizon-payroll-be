@@ -10,7 +10,7 @@ import {
 } from "../lib/crypto";
 import { mapAllPayrollPlaintexts } from "../mapper/DecipheredTextMapper";
 import { fillPayslip } from "../services/payroll.service";
-import dotenv from "dotenv";
+import { authenticate } from "../auth/microsoft.auth";
 
 class PayrollController {
   // GET /employee/:id
@@ -35,6 +35,18 @@ class PayrollController {
       }).exec();
 
       if (!uk) return res.status(404).json({ error: "user key not found" });
+
+      if (uk.microsoftUser) {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+          return res.status(401).json({ error: "No token provided" });
+        }
+        const token = authHeader.split(" ")[1];
+        const isAuthorized = authenticate(token, uk.userObjectId);
+        if (!isAuthorized) {
+          return res.status(401).json({ error: "Unauthorized user" });
+        }
+      }
 
       const ikm = buildIkm(uk.userObjectId, employeeId);
       const key = deriveKeyHKDF(ikm, uk.seed);

@@ -115,7 +115,7 @@ export class CryptoController {
       }
 
       await connectToDatabase();
-      // Fetch seed
+      // Fetch seed and oid
       const uk = await UserKey.findOne({ username: username }).exec();
       if (!uk)
         return res
