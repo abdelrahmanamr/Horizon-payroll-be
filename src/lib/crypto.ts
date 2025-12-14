@@ -1,4 +1,4 @@
-import crypto, { hkdfSync } from "crypto";
+import crypto, { createHash, hkdfSync } from "crypto";
 
 /**
  * Derive a 32-byte AES key for a user.
@@ -76,4 +76,17 @@ export function buildIkm(userObjectId: string, username: string): Buffer {
 export function zeroBuffer(buf: Buffer) {
   if (!buf) return;
   buf.fill(0);
+}
+
+export function generateDeterministicUUID(input: number | string): string {
+  const inputStr = String(input);
+
+  // Create SHA-256 hash of the input
+  const hash = createHash("sha256").update(inputStr).digest("hex");
+
+  // Format as UUID v5 style (version 5 uses SHA-1, but we're using SHA-256)
+  return `${hash.substring(0, 8)}-${hash.substring(8, 12)}-5${hash.substring(
+    13,
+    16
+  )}-${hash.substring(16, 20)}-${hash.substring(20, 32)}`;
 }

@@ -3,11 +3,13 @@ import {
   decryptString,
   deriveKeyHKDF,
   encryptString,
+  generateDeterministicUUID,
   zeroBuffer,
 } from "../lib/crypto";
 import { UserKey } from "../models/UserKey";
 import crypto from "crypto";
 import { connectToDatabase } from "../server";
+import { getUsers } from "../services/microsoft.sevice";
 
 // Helper: get or create per-user seed
 
@@ -26,21 +28,54 @@ export class CryptoController {
 
       await connectToDatabase();
 
+      const microsoft_users = await getUsers();
+
       const preparedUsers = [];
+      const failedToInsertUsers = [];
 
       for (const u of users) {
-        if (!u.objectId || !u.username) continue;
+        if (!u.username || !("microsoft_user" in u)) continue;
+
+        let finalObjectId = null;
+
+        // --- Logic for Microsoft Users ---
+        if (u.microsoft_user === true) {
+          // Fetch the OID from Microsoft if not provided in the request
+          const employeeMicrosoftData = microsoft_users.find(
+            (user) => user.employeeId === u.username
+          );
+          finalObjectId = employeeMicrosoftData?.id;
+          //  finalObjectId = await microsoft_users.find((user)=>user.employeeId === u.username)?.;
+          if (!finalObjectId) {
+            failedToInsertUsers.push({
+              username: u.username,
+              reason: "Could not obtain Object ID for Microsoft user",
+            });
+            console.error(
+              `Could not obtain Object ID for Microsoft user: ${u.username}. Skipping.`
+            );
+            continue; // Skip this user if we cannot get their Microsoft OID
+          }
+        } else {
+          finalObjectId = generateDeterministicUUID(u.username);
+        }
 
         // Skip duplicates in DB
         const exists = await UserKey.findOne({
-          $or: [{ username: u.username }, { userObjectId: u.objectId }],
+          $or: [{ username: u.username }, { userObjectId: finalObjectId }],
         });
 
         if (!exists) {
           preparedUsers.push({
             username: u.username,
-            userObjectId: u.objectId,
+            userObjectId: finalObjectId,
             seed: crypto.randomBytes(32),
+            microsoftUser: u.microsoft_user,
+          });
+        } else {
+          failedToInsertUsers.push({
+            username: u.username,
+            reason: "User already exist in the database",
           });
         }
       }
@@ -57,6 +92,7 @@ export class CryptoController {
           username: u.username,
           objectId: u.userObjectId,
         })),
+        failedToInsertUsers: failedToInsertUsers,
       });
     } catch (err) {
       console.error("bulk-add error", err);
