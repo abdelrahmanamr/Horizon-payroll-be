@@ -80,9 +80,9 @@ export class CryptoController {
         }
       }
 
-      if (preparedUsers.length === 0) {
-        return res.status(409).json({ error: "All users already exist" });
-      }
+      // if (preparedUsers.length === 0) {
+      //   return res.status(409).json({ error: "All users already exist" });
+      // }
 
       const result = await UserKey.insertMany(preparedUsers);
 
@@ -90,7 +90,6 @@ export class CryptoController {
         message: `Added ${result.length} users successfully`,
         users: result.map((u) => ({
           username: u.username,
-          objectId: u.userObjectId,
         })),
         failedToInsertUsers: failedToInsertUsers,
       });
