@@ -6,6 +6,6 @@ const cryptoController = new CryptoController();
 
 cryptoRouter.post("/add-users", cryptoController.addUsersBulk);
 cryptoRouter.post("/encrypt", cryptoController.encrypt);
-cryptoRouter.post("/decrypt", cryptoController.decrypt);
+// cryptoRouter.post("/decrypt", cryptoController.decrypt);
 
 export default cryptoRouter;

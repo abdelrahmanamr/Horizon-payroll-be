@@ -80,9 +80,9 @@ export class CryptoController {
         }
       }
 
-      // if (preparedUsers.length === 0) {
-      //   return res.status(409).json({ error: "All users already exist" });
-      // }
+      if (preparedUsers.length === 0) {
+        return res.status(409).json({ error: "All users already exist" });
+      }
 
       const result = await UserKey.insertMany(preparedUsers);
 
