@@ -160,7 +160,7 @@ class PayrollController {
 
       // Set headers
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", "attachment; filename=offer.pdf");
+      res.setHeader("Content-Disposition", "attachment; filename=payslip.pdf");
       res.setHeader("Content-Length", pdfBytes.length);
       res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
       // Send the PDF
