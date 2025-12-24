@@ -28,8 +28,6 @@ export async function fillPayslip(fields) {
     });
 
     const pdfBytes = await pdfDoc.save();
-
-    console.log("Payslip generated:");
     return pdfBytes;
   } catch (err) {
     console.error("Error generating PDF:", err);

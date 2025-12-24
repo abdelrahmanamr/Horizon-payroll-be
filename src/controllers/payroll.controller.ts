@@ -69,6 +69,109 @@ class PayrollController {
     }
   };
 
+  getPayrollForEmployee = async (req, res) => {
+    try {
+      const { employeeId } = req.params;
+      const { year, month } = req.query;
+
+      if (!employeeId) {
+        return res
+          .status(400)
+          .json({ error: "Employee ID and Payroll ID are required" });
+      }
+
+      // TODO refactor this url
+      const url = `https://firestore.googleapis.com/v1/projects/horizon-hr-2cfd3/databases/(default)/documents/encrypted_employee_data/${employeeId}`;
+
+      const response = await axios.get(url);
+      const mapped = mapFirestoreEncryptedData(response.data);
+
+      await connectToDatabase();
+
+      // should be replaced with employeeId
+      const uk = await UserKey.findOne({
+        username: employeeId,
+      }).exec();
+
+      if (!uk) return res.status(404).json({ error: "user key not found" });
+
+      const ikm = buildIkm(uk.userObjectId, employeeId);
+      const key = deriveKeyHKDF(ikm, uk.seed);
+
+      const plaintexts = mapped.encrypted.map((msg) => decryptString(msg, key));
+
+      const payrollArray = mapAllPayrollPlaintexts(plaintexts);
+
+      const monthPayroll = getPayrollForMonthYear(
+        payrollArray,
+        Number(year),
+        Number(month)
+      );
+
+      if (!monthPayroll) {
+        return res.status(404).json({
+          error: "Payroll not found for the specified month and year",
+        });
+      }
+
+      const pdfBytes = await fillPayslip({
+        name: monthPayroll.Name,
+        employeeId: employeeId,
+        title: monthPayroll.Title,
+        department: monthPayroll.Department,
+        hiringDate: monthPayroll.H_Date,
+        paymentMethod: monthPayroll.Payment_Method,
+        accountNumber: monthPayroll.Bank_Acc,
+        salaryFrom: monthPayroll.Salary_from,
+        salaryTo: monthPayroll.Salary_to,
+        payDate: monthPayroll.Salary_to, // missing
+
+        currentSalary: monthPayroll.Net_Salary,
+        currentBackdated: monthPayroll.Backdated_Salary,
+        currentTransport: monthPayroll.Transportation_Allowance,
+        currentHousing: monthPayroll.Housing_Allowance,
+        currentOvertime: monthPayroll.Overtime,
+        currentPerDiem: monthPayroll.Per_Diem,
+        currentBonus: monthPayroll.Bonus,
+        currentFixedBonus: monthPayroll.Fixed_Bonus,
+        currentSeasonalBonus: monthPayroll.Seasonal_Bonus,
+        currentSchool: monthPayroll.School_Allowance,
+        currentSales: monthPayroll.Sales_Incentive,
+        currentPension: monthPayroll.Pension,
+        currentGym: monthPayroll.GYM_Allowance,
+        currentVacation: monthPayroll.Vacation_Balance,
+        currentTotalEarning: monthPayroll.Total_Earning,
+        currentAbsent: monthPayroll.Absent,
+        currentPenalties: monthPayroll.Penalities,
+        currentLateness: monthPayroll.Lateness,
+        currentMedical: monthPayroll.Medical,
+        currentLoan: monthPayroll.Loans,
+        currentUnpaidLeave: monthPayroll.Unpaid_Leave,
+        currentOther: monthPayroll.Other_Deduction,
+        currentTotalDeduction: monthPayroll.Total_Deduction,
+
+        netPaidSalary: monthPayroll.Net_Paid_Salary,
+      });
+
+      zeroBuffer(key);
+      zeroBuffer(ikm as unknown as Buffer);
+
+      // return res.json({ payrollArray });
+
+      // Set headers
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", "attachment; filename=offer.pdf");
+      res.setHeader("Content-Length", pdfBytes.length);
+      res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+      // Send the PDF
+      res.send(Buffer.from(pdfBytes));
+    } catch (error: any) {
+      console.error("Error fetching payroll:", error.message);
+      return res.status(500).json({ error: "Failed to fetch payroll" });
+    }
+  };
+
+  // POST /payslip
   createPayslip = async (req, res) => {
     try {
       const {
@@ -158,4 +261,17 @@ class PayrollController {
     }
   };
 }
+
+function getPayrollForMonthYear(payrollArray, year, month) {
+  // Format month to two digits (01, 02, etc.)
+  const monthStr = month.toString().padStart(2, "0");
+  const searchPattern = `${year}-${monthStr}`;
+
+  // Use find() to get a single object or undefined
+  return payrollArray.find((payroll) => {
+    // Check if Salary_from starts in the target month/year
+    return payroll.Salary_from.startsWith(searchPattern);
+  });
+}
+
 export default PayrollController;

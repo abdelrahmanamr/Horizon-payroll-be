@@ -103,8 +103,9 @@ export class CryptoController {
   encrypt = async (req, res) => {
     try {
       const { username } = req.body;
-      if (!username)
+      if (!username) {
         return res.status(401).json({ error: "missing user info" });
+      }
 
       const { plaintext } = req.body;
       if (typeof plaintext !== "string" || plaintext.length === 0) {
