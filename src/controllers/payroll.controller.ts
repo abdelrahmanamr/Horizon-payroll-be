@@ -11,6 +11,7 @@ import {
 import { mapAllPayrollPlaintexts } from "../mapper/DecipheredTextMapper";
 import { fillPayslip } from "../services/payroll.service";
 import { authenticate } from "../auth/microsoft.auth";
+import { db } from "../lib/firebaseAdmin";
 
 class PayrollController {
   // GET /employee/:id
@@ -21,11 +22,20 @@ class PayrollController {
       if (!employeeId) {
         return res.status(400).json({ error: "Employee ID is required" });
       }
-      // TODO refactor this url
-      const url = `https://firestore.googleapis.com/v1/projects/horizon-hr-2cfd3/databases/(default)/documents/encrypted_employee_data/${employeeId}`;
 
-      const response = await axios.get(url);
-      const mapped = mapFirestoreEncryptedData(response.data);
+      // TODO refactor this url
+      const snapshot = await db
+        .collection("encrypted_employee_data")
+        .doc(employeeId)
+        .get();
+
+      // console.log("Snapshot data:", results);
+
+      if (!snapshot.exists) {
+        return res.status(404).json({ error: "Employee data not found" });
+      }
+
+      const employeeInfoFirebase = snapshot.data();
 
       await connectToDatabase();
 
@@ -51,7 +61,9 @@ class PayrollController {
       const ikm = buildIkm(uk.userObjectId, employeeId);
       const key = deriveKeyHKDF(ikm, uk.seed);
 
-      const plaintexts = mapped.encrypted.map((msg) => decryptString(msg, key));
+      const plaintexts = employeeInfoFirebase.encrypted.map((msg) =>
+        decryptString(msg, key)
+      );
 
       const payrollArray = mapAllPayrollPlaintexts(plaintexts);
 
@@ -69,7 +81,7 @@ class PayrollController {
     }
   };
 
-  getPayrollForEmployee = async (req, res) => {
+  getPayslipForEmployee = async (req, res) => {
     try {
       const { employeeId } = req.params;
       const { year, month } = req.query;
@@ -80,11 +92,22 @@ class PayrollController {
           .json({ error: "Employee ID and Payroll ID are required" });
       }
 
-      // TODO refactor this url
-      const url = `https://firestore.googleapis.com/v1/projects/horizon-hr-2cfd3/databases/(default)/documents/encrypted_employee_data/${employeeId}`;
+      if (!year || !month) {
+        return res.status(400).json({ error: "Year and Month are required" });
+      }
 
-      const response = await axios.get(url);
-      const mapped = mapFirestoreEncryptedData(response.data);
+      const snapshot = await db
+        .collection("encrypted_employee_data")
+        .doc(employeeId)
+        .get();
+
+      // console.log("Snapshot data:", results);
+
+      if (!snapshot.exists) {
+        return res.status(404).json({ error: "Employee data not found" });
+      }
+
+      const employeeInfoFirebase = snapshot.data();
 
       await connectToDatabase();
 
@@ -98,7 +121,9 @@ class PayrollController {
       const ikm = buildIkm(uk.userObjectId, employeeId);
       const key = deriveKeyHKDF(ikm, uk.seed);
 
-      const plaintexts = mapped.encrypted.map((msg) => decryptString(msg, key));
+      const plaintexts = employeeInfoFirebase.encrypted.map((msg) =>
+        decryptString(msg, key)
+      );
 
       const payrollArray = mapAllPayrollPlaintexts(plaintexts);
 

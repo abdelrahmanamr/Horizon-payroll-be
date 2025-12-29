@@ -15,7 +15,7 @@ payrollRouter.post("/employee/payslip", payrollController.createPayslip);
 payrollRouter.get(
   "/employee/:employeeId/payslip",
   apiKeyAuth,
-  payrollController.getPayrollForEmployee
+  payrollController.getPayslipForEmployee
 );
 
 export default payrollRouter;
