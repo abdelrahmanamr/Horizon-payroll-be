@@ -8,7 +8,10 @@ import {
   deriveKeyHKDF,
   zeroBuffer,
 } from "../lib/crypto";
-import { mapAllPayrollPlaintexts } from "../mapper/DecipheredTextMapper";
+import {
+  mapAllPayrollPlaintexts,
+  mapPayrollToStructured,
+} from "../mapper/DecipheredTextMapper";
 import { fillPayslip } from "../services/payroll.service";
 import { authenticate } from "../auth/microsoft.auth";
 import { db } from "../lib/firebaseAdmin";
@@ -71,6 +74,61 @@ class PayrollController {
       zeroBuffer(ikm as unknown as Buffer);
 
       return res.json({ payrollArray });
+    } catch (error: any) {
+      console.error("Error fetching Firestore data:", error.message);
+
+      return res.status(500).json({
+        error: "Failed to fetch employee data",
+        details: error.response?.data || error.message,
+      });
+    }
+  };
+
+  getPayrollsByEmployeeIdForMobile = async (req, res) => {
+    try {
+      const employeeId = req.params.employeeId;
+
+      if (!employeeId) {
+        return res.status(400).json({ error: "Employee ID is required" });
+      }
+
+      // TODO refactor this url
+      const snapshot = await db
+        .collection("encrypted_employee_data")
+        .doc(employeeId)
+        .get();
+
+      // console.log("Snapshot data:", results);
+
+      if (!snapshot.exists) {
+        return res.status(404).json({ error: "Employee data not found" });
+      }
+
+      const employeeInfoFirebase = snapshot.data();
+
+      await connectToDatabase();
+
+      // should be replaced with employeeId
+      const uk = await UserKey.findOne({
+        username: employeeId,
+      }).exec();
+
+      if (!uk) return res.status(404).json({ error: "user key not found" });
+
+      const ikm = buildIkm(uk.userObjectId, employeeId);
+      const key = deriveKeyHKDF(ikm, uk.seed);
+
+      const plaintexts = employeeInfoFirebase.encrypted.map((msg) =>
+        decryptString(msg, key)
+      );
+
+      const payrollArray = mapAllPayrollPlaintexts(plaintexts);
+      const structuredPayrolls = payrollArray.map(mapPayrollToStructured);
+
+      zeroBuffer(key);
+      zeroBuffer(ikm as unknown as Buffer);
+
+      return res.json({ payrolls: structuredPayrolls });
     } catch (error: any) {
       console.error("Error fetching Firestore data:", error.message);
 

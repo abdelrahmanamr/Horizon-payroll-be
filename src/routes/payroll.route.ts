@@ -18,4 +18,10 @@ payrollRouter.get(
   payrollController.getPayslipForEmployee
 );
 
+payrollRouter.get(
+  "/employee/:employeeId",
+  apiKeyAuth,
+  payrollController.getPayrollsByEmployeeIdForMobile
+);
+
 export default payrollRouter;

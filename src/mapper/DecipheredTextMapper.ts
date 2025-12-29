@@ -70,3 +70,42 @@ export function mapAllPayrollPlaintexts(plaintexts: string[]) {
     return payroll;
   });
 }
+
+export function mapPayrollToStructured(payroll: any) {
+  return {
+    payroll_period: {
+      from: payroll.Salary_from,
+      to: payroll.Salary_to,
+      pay_date: payroll.Salary_to,
+    },
+
+    payments: {
+      salary: Number(payroll.Net_Salary),
+      back_dated_salary: Number(payroll.Backdated_Salary),
+      transportation_allowance: Number(payroll.Transportation_Allowance),
+      housing_allowance: Number(payroll.Housing_Allowance),
+      overtime: Number(payroll.Overtime),
+      per_diem: Number(payroll.Per_Diem),
+      bonus: Number(payroll.Bonus),
+      seasonal_bonus: Number(payroll.Seasonal_Bonus),
+      fixed_bonus: Number(payroll.Fixed_Bonus),
+      school_allowance: Number(payroll.School_Allowance),
+      sales_incentive: Number(payroll.Sales_Incentive),
+      pension: Number(payroll.Pension),
+      gym_allowance: Number(payroll.GYM_Allowance),
+      vacation_pay: Number(payroll.Vacation_Balance),
+    },
+
+    deductions: {
+      absent: Number(payroll.Absent),
+      penalty: Number(payroll.Penalities),
+      lateness: Number(payroll.Lateness),
+      medical_insurance: Number(payroll.Medical),
+      loan: Number(payroll.Loans),
+      unpaid_leave: Number(payroll.Unpaid_Leave),
+      other_deduction: Number(payroll.Other_Deduction),
+    },
+
+    net_pay: Number(payroll.Net_Paid_Salary),
+  };
+}
