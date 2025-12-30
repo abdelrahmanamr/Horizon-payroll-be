@@ -197,57 +197,12 @@ class PayrollController {
         });
       }
 
-      const pdfBytes = await fillPayslip({
-        name: monthPayroll.Name,
-        employeeId: employeeId,
-        title: monthPayroll.Title,
-        department: monthPayroll.Department,
-        hiringDate: monthPayroll.H_Date,
-        paymentMethod: monthPayroll.Payment_Method,
-        accountNumber: monthPayroll.Bank_Acc,
-        salaryFrom: monthPayroll.Salary_from,
-        salaryTo: monthPayroll.Salary_to,
-        payDate: monthPayroll.Salary_to, // missing
-
-        currentSalary: monthPayroll.Net_Salary,
-        currentBackdated: monthPayroll.Backdated_Salary,
-        currentTransport: monthPayroll.Transportation_Allowance,
-        currentHousing: monthPayroll.Housing_Allowance,
-        currentOvertime: monthPayroll.Overtime,
-        currentPerDiem: monthPayroll.Per_Diem,
-        currentBonus: monthPayroll.Bonus,
-        currentFixedBonus: monthPayroll.Fixed_Bonus,
-        currentSeasonalBonus: monthPayroll.Seasonal_Bonus,
-        currentSchool: monthPayroll.School_Allowance,
-        currentSales: monthPayroll.Sales_Incentive,
-        currentPension: monthPayroll.Pension,
-        currentGym: monthPayroll.GYM_Allowance,
-        currentVacation: monthPayroll.Vacation_Balance,
-        currentTotalEarning: monthPayroll.Total_Earning,
-        currentAbsent: monthPayroll.Absent,
-        currentPenalties: monthPayroll.Penalities,
-        currentLateness: monthPayroll.Lateness,
-        currentMedical: monthPayroll.Medical,
-        currentLoan: monthPayroll.Loans,
-        currentUnpaidLeave: monthPayroll.Unpaid_Leave,
-        currentOther: monthPayroll.Other_Deduction,
-        currentTotalDeduction: monthPayroll.Total_Deduction,
-
-        netPaidSalary: monthPayroll.Net_Paid_Salary,
-      });
+      const structuredPayroll = mapPayrollToStructured(monthPayroll);
 
       zeroBuffer(key);
       zeroBuffer(ikm as unknown as Buffer);
 
-      // return res.json({ payrollArray });
-
-      // Set headers
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", "attachment; filename=payslip.pdf");
-      res.setHeader("Content-Length", pdfBytes.length);
-      res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
-      // Send the PDF
-      res.send(Buffer.from(pdfBytes));
+      return res.json(structuredPayroll);
     } catch (error: any) {
       console.error("Error fetching payroll:", error.message);
       return res.status(500).json({ error: "Failed to fetch payroll" });
