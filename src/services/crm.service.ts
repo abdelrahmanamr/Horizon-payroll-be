@@ -53,9 +53,6 @@ export class CRMSevice {
       body: JSON.stringify(payrollData),
     });
 
-    console.log("CRM :", JSON.stringify(payrollData));
-    console.log("x-api-key :", this.apiKey);
-
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(
