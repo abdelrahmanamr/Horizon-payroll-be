@@ -10,11 +10,17 @@ import { UserKey } from "../models/UserKey";
 import crypto from "crypto";
 import { connectToDatabase } from "../server";
 import { getUsers } from "../services/microsoft.sevice";
+import { mapAllPayrollPlaintexts } from "../mapper/DecipheredTextMapper";
+import { CRMSevice } from "../services/crm.service";
 
 // Helper: get or create per-user seed
 
 export class CryptoController {
-  constructor() {}
+  private crmService;
+
+  constructor() {
+    this.crmService = new CRMSevice();
+  }
 
   addUsersBulk = async (req, res) => {
     try {
@@ -117,15 +123,53 @@ export class CryptoController {
       await connectToDatabase();
       // Fetch seed and oid
       const uk = await UserKey.findOne({ username: username }).exec();
-      if (!uk)
+      if (!uk) {
         return res
           .status(500)
           .json({ error: "User key not found; contact support" });
+      }
 
       const ikm = buildIkm(uk.userObjectId, username);
       const key = deriveKeyHKDF(ikm, uk.seed);
 
       const payload = encryptString(plaintext, key);
+
+      const payrollArray = mapAllPayrollPlaintexts([plaintext]);
+
+      await this.crmService.archivePayroll(username, {
+        he_bankacc: payrollArray[0].Bank_Acc,
+        he_bonus: Number(payrollArray[0].Bonus),
+        he_gymallowance: Number(payrollArray[0].GYM_Allowance),
+        he_transportationallowance: Number(
+          payrollArray[0].Transportation_Allowance
+        ),
+        he_medical: Number(payrollArray[0].Medical),
+        he_netsalary: Number(payrollArray[0].Net_Salary),
+        he_totaldeduction: Number(payrollArray[0].Total_Deduction),
+        he_absent: Number(payrollArray[0].Absent),
+        he_otherdeduction: Number(payrollArray[0].Other_Deduction),
+        he_housingallowance: Number(payrollArray[0].Housing_Allowance),
+        he_penalities: Number(payrollArray[0].Penalities),
+        he_vacationbalance: Number(payrollArray[0].Vacation_Balance),
+        he_overtime: Number(payrollArray[0].Overtime),
+        he_schoolallowance: Number(payrollArray[0].School_Allowance),
+        he_fixedbonus: Number(payrollArray[0].Fixed_Bonus),
+        he_salaryfrom: payrollArray[0].Salary_from,
+        he_loans: Number(payrollArray[0].Loans),
+        he_unpaidleave: Number(payrollArray[0].Unpaid_Leave),
+        he_totalearning: Number(payrollArray[0].Total_Earning),
+        he_backdatedsalary: Number(payrollArray[0].Backdated_Salary),
+        he_seasonalbonus: Number(payrollArray[0].Seasonal_Bonus),
+        he_salaryto: payrollArray[0].Salary_to,
+        he_paydate: payrollArray[0].Salary_to,
+        he_pension: Number(payrollArray[0].Pension),
+        he_salesincentive: Number(payrollArray[0].Sales_Incentive),
+        he_netpaidsalary: Number(payrollArray[0].Net_Paid_Salary),
+        he_paymentmethod: payrollArray[0].Payment_Method,
+        he_perdiem: Number(payrollArray[0].Per_Diem),
+        he_lateness: Number(payrollArray[0].Lateness),
+        exchangerate: 1,
+      });
 
       // zero sensitive buffers
       zeroBuffer(key);
