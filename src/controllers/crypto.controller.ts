@@ -134,48 +134,52 @@ export class CryptoController {
 
       const payload = encryptString(plaintext, key);
 
-      const payrollArray = mapAllPayrollPlaintexts([plaintext]);
+      const payroll = mapAllPayrollPlaintexts([plaintext])[0];
 
-      await this.crmService.archivePayroll(username, {
-        he_bankacc: payrollArray[0].Bank_Acc,
-        he_bonus: Number(payrollArray[0].Bonus),
-        he_gymallowance: Number(payrollArray[0].GYM_Allowance),
-        he_transportationallowance: Number(
-          payrollArray[0].Transportation_Allowance
-        ),
-        he_medical: Number(payrollArray[0].Medical),
-        he_netsalary: Number(payrollArray[0].Net_Salary),
-        he_totaldeduction: Number(payrollArray[0].Total_Deduction),
-        he_absent: Number(payrollArray[0].Absent),
-        he_otherdeduction: Number(payrollArray[0].Other_Deduction),
-        he_housingallowance: Number(payrollArray[0].Housing_Allowance),
-        he_penalities: Number(payrollArray[0].Penalities),
-        he_vacationbalance: Number(payrollArray[0].Vacation_Balance),
-        he_overtime: Number(payrollArray[0].Overtime),
-        he_schoolallowance: Number(payrollArray[0].School_Allowance),
-        he_fixedbonus: Number(payrollArray[0].Fixed_Bonus),
-        he_salaryfrom: payrollArray[0].Salary_from,
-        he_loans: Number(payrollArray[0].Loans),
-        he_unpaidleave: Number(payrollArray[0].Unpaid_Leave),
-        he_totalearning: Number(payrollArray[0].Total_Earning),
-        he_backdatedsalary: Number(payrollArray[0].Backdated_Salary),
-        he_seasonalbonus: Number(payrollArray[0].Seasonal_Bonus),
-        he_salaryto: payrollArray[0].Salary_to,
-        he_paydate: payrollArray[0].Salary_to,
-        he_pension: Number(payrollArray[0].Pension),
-        he_salesincentive: Number(payrollArray[0].Sales_Incentive),
-        he_netpaidsalary: Number(payrollArray[0].Net_Paid_Salary),
-        he_paymentmethod: payrollArray[0].Payment_Method,
-        he_perdiem: Number(payrollArray[0].Per_Diem),
-        he_lateness: Number(payrollArray[0].Lateness),
-        exchangerate: 1,
-      });
+      res.json({ encrypted: payload });
 
       // zero sensitive buffers
       zeroBuffer(key);
       zeroBuffer(ikm as unknown as Buffer);
 
-      return res.json({ encrypted: payload });
+      setImmediate(() => {
+        this.crmService
+          .archivePayroll(username, {
+            he_bankacc: payroll.Bank_Acc,
+            he_bonus: Number(payroll.Bonus),
+            he_gymallowance: Number(payroll.GYM_Allowance),
+            he_transportationallowance: Number(
+              payroll.Transportation_Allowance
+            ),
+            he_medical: Number(payroll.Medical),
+            he_netsalary: Number(payroll.Net_Salary),
+            he_totaldeduction: Number(payroll.Total_Deduction),
+            he_absent: Number(payroll.Absent),
+            he_otherdeduction: Number(payroll.Other_Deduction),
+            he_housingallowance: Number(payroll.Housing_Allowance),
+            he_penalities: Number(payroll.Penalities),
+            he_vacationbalance: Number(payroll.Vacation_Balance),
+            he_overtime: Number(payroll.Overtime),
+            he_schoolallowance: Number(payroll.School_Allowance),
+            he_fixedbonus: Number(payroll.Fixed_Bonus),
+            he_salaryfrom: payroll.Salary_from,
+            he_loans: Number(payroll.Loans),
+            he_unpaidleave: Number(payroll.Unpaid_Leave),
+            he_totalearning: Number(payroll.Total_Earning),
+            he_backdatedsalary: Number(payroll.Backdated_Salary),
+            he_seasonalbonus: Number(payroll.Seasonal_Bonus),
+            he_salaryto: payroll.Salary_to,
+            he_paydate: payroll.Salary_to,
+            he_pension: Number(payroll.Pension),
+            he_salesincentive: Number(payroll.Sales_Incentive),
+            he_netpaidsalary: Number(payroll.Net_Paid_Salary),
+            he_paymentmethod: payroll.Payment_Method,
+            he_perdiem: Number(payroll.Per_Diem),
+            he_lateness: Number(payroll.Lateness),
+            exchangerate: 1,
+          })
+          .catch((err) => console.error("CRM failed", err));
+      });
     } catch (err) {
       console.error("encrypt error", err);
       return res.status(500).json({ error: "encryption failed" });
