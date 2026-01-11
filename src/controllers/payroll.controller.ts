@@ -92,7 +92,6 @@ class PayrollController {
         return res.status(400).json({ error: "Employee ID is required" });
       }
 
-      // TODO refactor this url
       const snapshot = await db
         .collection("encrypted_employee_data")
         .doc(employeeId)
@@ -167,12 +166,16 @@ class PayrollController {
 
       const employeeInfoFirebase = snapshot.data();
 
+      console.log("connect to manogodb");
       await connectToDatabase();
+      console.log("connect to manogodb done");
 
       // should be replaced with employeeId
+      console.log("find user data from manogodb");
       const uk = await UserKey.findOne({
         username: employeeId,
       }).exec();
+      console.log("find user data from manogodb Done");
 
       if (!uk) return res.status(404).json({ error: "user key not found" });
 
@@ -183,7 +186,9 @@ class PayrollController {
         decryptString(msg, key)
       );
 
+      console.log("create payroll data start");
       const payrollArray = mapAllPayrollPlaintexts(plaintexts);
+      console.log("create payroll data end");
 
       const monthPayroll = getPayrollForMonthYear(
         payrollArray,

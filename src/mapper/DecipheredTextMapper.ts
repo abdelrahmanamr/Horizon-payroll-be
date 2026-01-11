@@ -108,5 +108,7 @@ export function mapPayrollToStructured(payroll: any) {
 
     net_pay: Number(payroll.Net_Paid_Salary),
     currency: "EGP",
+    bank_acc: payroll.Bank_Acc,
+    payment_method: payroll.Payment_Method,
   };
 }
